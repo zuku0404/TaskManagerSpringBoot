@@ -3,25 +3,22 @@ package com.zuku.jira.domain.controler.impl;
 import com.zuku.jira.domain.controler.IUserController;
 import com.zuku.jira.domain.service.impl.UserServiceImpl;
 import com.zuku.jira.entity.User;
-import com.zuku.jira.helpers.ActionResult;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
-@RequestMapping("/api/user")
+@RequiredArgsConstructor
+@RequestMapping("/api/v1/users")
 public class UserControllerImpl implements IUserController {
-    @Autowired
     private final UserServiceImpl userService;
 
-    public UserControllerImpl(UserServiceImpl userService) {
-        this.userService = userService;
-    }
-
-    @GetMapping(path = "{userId}")
+    @GetMapping(path = "/{userId}")
     @Override
-    public User getUserById(@PathVariable("userId") Long userId) {
+    public User getUser(@PathVariable("userId") Long userId) {
         return userService.findUser(userId);
     }
 
@@ -31,48 +28,25 @@ public class UserControllerImpl implements IUserController {
         return userService.findAllUsers();
     }
 
-    @PostMapping
+    @PutMapping(path = "/me")
     @Override
-    public ActionResult createUser(@RequestBody User user) {
-        return userService.signUp(user);
-    }
-
-    @PutMapping(path = "/updateCurrentUser")
-    @Override
-    public ActionResult updateUser(
+    public ResponseEntity<Object> updateUser(
             @RequestParam(required = false) String firstName,
             @RequestParam(required = false) String lastName) {
         return userService.editUserData(firstName, lastName);
     }
 
-    @PutMapping(path = "/updateCurrentUserPassword")
+    @PutMapping(path = "/password")
     @Override
-    public ActionResult updatePassword(
-            @RequestParam String oldPassword,
+    public ResponseEntity<Object> updatePassword(
             @RequestParam String newPassword) {
-        return userService.editPassword(oldPassword, newPassword);
+        return userService.editPassword(newPassword);
     }
 
-    @DeleteMapping
+    @DeleteMapping(path = "/me")
     @Override
-    public ActionResult removeAccount() {
+    public ResponseEntity<Object> removeUser() {
         return userService.unregister();
-    }
-
-
-    // zamienic na authetication !!!!!!
-    @GetMapping("/signIn/{login}/{password}")
-    @Override
-    public ActionResult signIn(
-            @PathVariable("login") String login,
-            @PathVariable("password") String password) {
-        return userService.signIn(login, password);
-    }
-
-    @GetMapping("/signOut")
-    @Override
-    public ActionResult signOut() {
-        return userService.signOut();
     }
 }
 

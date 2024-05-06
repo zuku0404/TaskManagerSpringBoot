@@ -1,7 +1,7 @@
 package com.zuku.jira.domain.controler;
 
 import com.zuku.jira.entity.Board;
-import com.zuku.jira.helpers.ActionResult;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -12,8 +12,8 @@ public interface IBoardController {
 
     public List<Board> getAllBoards();
 
-    public ActionResult removeBoard(Long boardId);
-    public ActionResult registerNewBoard(Board board);
+    public ResponseEntity<Object> removeBoard(Long boardId);
+    public ResponseEntity<Object> registerNewBoard(Board board);
 
-    public ActionResult updateBoard(String oldName, String newName);
+    public ResponseEntity<Object> updateBoard(Long boardId, String newName);
 }

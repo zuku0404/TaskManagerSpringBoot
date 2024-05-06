@@ -1,103 +1,92 @@
 package com.zuku.jira.domain.service.impl;
 
 import com.zuku.jira.domain.repository.IBoardRepository;
+import com.zuku.jira.domain.repository.ITaskRepository;
 import com.zuku.jira.domain.service.IBoardService;
 import com.zuku.jira.domain.validator.Validator;
 import com.zuku.jira.entity.Board;
-import com.zuku.jira.entity.User;
-import com.zuku.jira.helpers.ActionResult;
-import com.zuku.jira.helpers.ActionResultDescription;
-import com.zuku.jira.helpers.CurrentUser;
-import com.zuku.jira.helpers.Status;
+import com.zuku.jira.domain.enums.ActionResultDescription;
+import com.zuku.jira.entity.Task;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class BoardServiceImpl implements IBoardService {
-    private IBoardRepository boardRepository;
-
-    @Autowired
-    public BoardServiceImpl(IBoardRepository boardRepository) {
-        this.boardRepository = boardRepository;
-    }
+    private final IBoardRepository boardRepository;
+    private final ITaskRepository taskRepository;
 
     @Override
-    public ActionResult createBoard(Board board) {
-        User currentUser = CurrentUser.getInstance().getUser();
-        if (currentUser != null) {
-            String name = board.getName();
-            String trimmedName = name.trim();
-            String resultOfValidation = Validator.boardValidator(trimmedName);
-            if (resultOfValidation.isEmpty()) {
-                Optional<Board> boardOptional = boardRepository.findByName(name);
-                if (boardOptional.isPresent()) {
-                    return new ActionResult(Status.INVALID, ActionResultDescription.BOARD_NAME_EXIST.getDescription());
-                } else {
-                    boardRepository.save(new Board(trimmedName));
-                    return new ActionResult(Status.SUCCESS, ActionResultDescription.SUCCESS.getDescription());
-                }
+    public ResponseEntity<Object> createBoard(Board board) {
+        String name = board.getName();
+        String trimmedName = name.trim();
+        String resultOfValidation = Validator.boardValidator(trimmedName);
+        if (resultOfValidation.isEmpty()) {
+            Optional<Board> boardOptional = boardRepository.findByName(name);
+            if (boardOptional.isPresent()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(ActionResultDescription.BOARD_NAME_EXIST.getDescription());
             } else {
-                return new ActionResult(Status.INVALID, resultOfValidation);
+                boardRepository.save(board);
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(board);
             }
         } else {
-            return new ActionResult(Status.INVALID, ActionResultDescription.NO_USER_LOGGED_IN.getDescription());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(resultOfValidation);
         }
     }
 
     @Override
     @Transactional
-    public ActionResult editBoard(String oldName, String newName) {
-        User currentUser = CurrentUser.getInstance().getUser();
-        if (currentUser != null) {
-            String resultOfValidation = Validator.boardValidator(newName);
-            if (resultOfValidation.isEmpty()) {
-                Optional<Board> boardOptional = boardRepository.findByName(oldName);
-                if (boardOptional.isPresent()) {
-                    Board board = boardOptional.get();
-                    board.setName(newName);
-                    return new ActionResult(Status.SUCCESS, ActionResultDescription.SUCCESS.getDescription());
-                } else {
-                    return new ActionResult(Status.INVALID, ActionResultDescription.BOARD_NOT_EXIST.getDescription());
-                }
-            } else {
-                return new ActionResult(Status.INVALID, resultOfValidation);
+    public ResponseEntity<Object> editBoard(Long boardId, String newName) {
+        String resultOfValidation = Validator.boardValidator(newName);
+        if (resultOfValidation.isEmpty()) {
+            Optional<Board> boardOptional = boardRepository.findById(boardId);
+            if (boardOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ActionResultDescription.BOARD_NOT_EXIST.getDescription());
             }
+            Board board = boardOptional.get();
+            board.setName(newName);
+            return ResponseEntity.noContent().build();
         } else {
-            return new ActionResult(Status.INVALID, ActionResultDescription.NO_USER_LOGGED_IN.getDescription());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(resultOfValidation);
         }
     }
 
     @Override
-    public ActionResult deleteBoard(Long boardId) {
-        User currentUser = CurrentUser.getInstance().getUser();
-        if (currentUser != null) {
-            if (boardRepository.findById(boardId).isPresent()) {
-                boardRepository.deleteById(boardId);
-                return new ActionResult(Status.SUCCESS, ActionResultDescription.SUCCESS.getDescription());
-            } else {
-                return new ActionResult(Status.INVALID, ActionResultDescription.BOARD_NOT_EXIST.getDescription());
-            }
-        } else {
-            return new ActionResult(Status.INVALID, ActionResultDescription.NO_USER_LOGGED_IN.getDescription());
+    public ResponseEntity<Object> deleteBoard(Long boardId) {
+        Optional<Board> boardOptional = boardRepository.findById(boardId);
+        if (boardOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ActionResultDescription.BOARD_NOT_EXIST.getDescription());
         }
+        List<Task> allByBoardId = taskRepository.findAllByBoardId(boardId);
+        taskRepository.deleteAll(allByBoardId);
+        boardRepository.deleteById(boardId);
+        return ResponseEntity.noContent().build();
     }
 
     @Override
-    public Board findByName(String name) {
+    public Board findBoardByName(String name) {
         return boardRepository.findByName(name).orElse(null);
     }
 
     @Override
-    public Board findBoard(Long boardId) {
+    public Board findBoardById(Long boardId) {
         return boardRepository.findById(boardId).orElse(null);
     }
 
     @Override
-    public List<Board> findAllBoards() {
+    public List<Board> findBoards() {
         return boardRepository.findAll();
     }
 }

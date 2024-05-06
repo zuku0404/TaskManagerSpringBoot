@@ -1,16 +1,20 @@
 package com.zuku.jira.domain.service;
 
 import com.zuku.jira.entity.Board;
-import com.zuku.jira.helpers.ActionResult;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
 public interface IBoardService {
-    public ActionResult createBoard(Board board);
-    public  ActionResult editBoard(String oldName,String newName);
-    public ActionResult deleteBoard(Long id);
-    public Board findBoard(Long id);
+    public ResponseEntity<Object> createBoard(Board board);
 
-    public Board findByName(String name);
-    public List<Board> findAllBoards();
+    public ResponseEntity<Object> editBoard(Long boardId, String newName);
+
+    public ResponseEntity<Object> deleteBoard(Long id);
+
+    public Board findBoardById(Long id);
+
+    public Board findBoardByName(String name);
+
+    public List<Board> findBoards();
 }

@@ -1,22 +1,21 @@
 package com.zuku.jira.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
 @Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Board {
-    public Board(Long id, String name) {
-        this.id = id;
-        this.name = name;
-    }
-
     public Board(String name) {
         this.name = name;
-    }
-
-    public Board() {
     }
 
     @Id
@@ -24,33 +23,9 @@ public class Board {
     private Long id;
     private String name;
 
-    @OneToMany(mappedBy = "board")
-    @JsonIgnoreProperties("board")
+    @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @JsonIgnore
     private Set<Task> tasks;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Set<Task> getTasks() {
-        return tasks;
-    }
-
-    public void setTasks(Set<Task> tasks) {
-        this.tasks = tasks;
-    }
 
     @Override
     public String toString() {

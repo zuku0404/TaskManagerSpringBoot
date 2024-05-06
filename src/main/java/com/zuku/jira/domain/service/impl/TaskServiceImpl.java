@@ -4,103 +4,96 @@ import com.zuku.jira.domain.repository.IBoardRepository;
 import com.zuku.jira.domain.repository.ITaskRepository;
 import com.zuku.jira.domain.repository.IUserRepository;
 import com.zuku.jira.domain.service.ITaskService;
+import com.zuku.jira.dto.TaskDto;
 import com.zuku.jira.entity.Board;
 import com.zuku.jira.entity.Task;
 import com.zuku.jira.entity.User;
-import com.zuku.jira.helpers.ActionResult;
-import com.zuku.jira.helpers.ActionResultDescription;
-import com.zuku.jira.helpers.CurrentUser;
-import com.zuku.jira.helpers.Status;
+import com.zuku.jira.domain.enums.ActionResultDescription;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class TaskServiceImpl implements ITaskService {
     private final ITaskRepository taskRepository;
     private final IBoardRepository boardRepository;
     private final IUserRepository userRepository;
 
-    @Autowired
-    public TaskServiceImpl(ITaskRepository taskRepository, IBoardRepository boardRepository, IUserRepository userRepository) {
-        this.taskRepository = taskRepository;
-        this.boardRepository = boardRepository;
-        this.userRepository = userRepository;
+    @Override
+    public ResponseEntity<Object> createTask(TaskDto task) {
+        if (taskRepository.findByTitle(task.getTitle()).isEmpty()) {
+            if (task.getBoardId() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ActionResultDescription.BOARD_NOT_EXIST.getDescription());
+            }
+            Optional<Board> boardOptional = boardRepository.findById(task.getBoardId());
+            if (boardOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ActionResultDescription.BOARD_NOT_EXIST.getDescription());
+            }
+            Board board = boardOptional.get();
+            User user = task.getUserID() != null ? userRepository.findById(task.getUserID()).orElse(null) : null;
+            taskRepository.save(new Task(task.getTitle(), task.getDescription(), user, board));
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(task);
+        } else {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ActionResultDescription.TASK_NAME_EXIST.getDescription());
+        }
     }
 
     @Override
-    public ActionResult createTask(Task task) {
-        User currentUser = CurrentUser.getInstance().getUser();
-        if (currentUser != null) {
-            if (taskRepository.findByTitle(task.getTitle()).isEmpty()) {
-                Optional<Board> board = boardRepository.findById(task.getBoard().getId());
-                if (board.isPresent()) {
-                    User user = userRepository.findById(task.getUser().getId()).orElse(null);
-                    taskRepository.save(new Task(task.getTitle(), task.getDescription(), user, board.get()));
-                    return new ActionResult(Status.SUCCESS, ActionResultDescription.SUCCESS.getDescription());
-                } else {
-                    return new ActionResult(Status.INVALID, ActionResultDescription.BOARD_NOT_EXIST.getDescription());
-                }
-            } else {
-                return new ActionResult(Status.INVALID, ActionResultDescription.TASK_NAME_EXIST.getDescription());
-            }
-        } else {
-            return new ActionResult(Status.INVALID, ActionResultDescription.NO_USER_LOGGED_IN.getDescription());
-        }
-    }
-    @Override
     @Transactional
-    public ActionResult editTask(Long taskId, String title, String description, Long boardId, Long userID) {
-        User currentUser = CurrentUser.getInstance().getUser();
-        if (currentUser != null) {
-            Optional<Task> taskOptional = taskRepository.findById(taskId);
-            if (taskOptional.isPresent()) {
-                Optional<Board> boardOptional = boardRepository.findById(boardId);
-                if (boardOptional.isPresent()) {
-                    Task task = taskOptional.get();
-                    if (title != null && !title.isBlank() && !Objects.equals(task.getTitle(), title)) {
-                        task.setTitle(title);
-                    }
-                    if (description != null && !description.isBlank() && !Objects.equals(task.getDescription(), description)) {
-                        task.setDescription(description);
-                    }
-                    if (!Objects.equals(task.getBoard().getId(), boardId)) {
-                        task.setBoard(boardOptional.get());
-                    }
-                    User user = userRepository.findById(userID).orElse(null);
-                    if (!task.getUser().equals(user)) {
-                        task.setUser(user);
-                    }
-                    return new ActionResult(Status.SUCCESS);
-                } else {
-                    return new ActionResult(Status.INVALID, ActionResultDescription.BOARD_NOT_EXIST.getDescription());
-                }
-            } else {
-                return new ActionResult(Status.INVALID, ActionResultDescription.TASK_NOT_EXIST.getDescription());
-            }
-        } else {
-            return new ActionResult(Status.INVALID, ActionResultDescription.NO_USER_LOGGED_IN.getDescription());
+    public ResponseEntity<Object> editTask(Long taskId, TaskDto taskDto) {
+        Optional<Task> taskOptional = taskRepository.findById(taskId);
+        if (taskOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ActionResultDescription.TASK_NOT_EXIST.getDescription());
         }
+        Task task = taskOptional.get();
+        Optional<Board> boardOptional = Optional.empty();
+        if (taskDto.getBoardId() != null) {
+            boardOptional = boardRepository.findById(taskDto.getBoardId());
+            if (boardOptional.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ActionResultDescription.BOARD_NOT_EXIST.getDescription());
+            }
+        }
+        Board board = boardOptional.orElse(null);
+        if (taskDto.getTitle() != null && !taskDto.getTitle().isBlank() && !Objects.equals(task.getTitle(), taskDto.getTitle())) {
+            task.setTitle(taskDto.getTitle());
+        }
+        if (taskDto.getDescription() != null && !taskDto.getDescription().isBlank() && !Objects.equals(task.getDescription(), taskDto.getDescription())) {
+            task.setDescription(taskDto.getDescription());
+        }
+        if (taskDto.getBoardId() != null && !Objects.equals(task.getBoard().getId(), taskDto.getBoardId())) {
+            task.setBoard(board);
+        }
+        User user = taskDto.getUserID() != null ? userRepository.findById(taskDto.getUserID()).orElse(null) : null;
+        if (task.getUser() != null && !task.getUser().equals(user) || task.getUser() == null && user != null) {
+            task.setUser(user);
+        }
+        return ResponseEntity.noContent().build();
     }
+
     @Override
-    public ActionResult removeTask(Long taskId) {
-        User currentUser = CurrentUser.getInstance().getUser();
-        if (currentUser != null) {
-            Optional<Task> taskOptional = taskRepository.findById(taskId);
-            if (taskOptional.isPresent()) {
-                taskRepository.deleteById(taskId);
-                return new ActionResult(Status.SUCCESS, ActionResultDescription.SUCCESS.getDescription());
-            } else {
-                return new ActionResult(Status.INVALID, ActionResultDescription.TASK_NOT_EXIST.getDescription());
-            }
-        } else {
-            return new ActionResult(Status.INVALID, ActionResultDescription.NO_USER_LOGGED_IN.getDescription());
+    public ResponseEntity<Object> removeTask(Long taskId) {
+        Optional<Task> taskOptional = taskRepository.findById(taskId);
+        if (taskOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ActionResultDescription.TASK_NOT_EXIST.getDescription());
         }
+        taskRepository.deleteById(taskId);
+        return ResponseEntity.noContent().build();
     }
 
     @Override
@@ -109,20 +102,20 @@ public class TaskServiceImpl implements ITaskService {
     }
 
     @Override
-    public List<Task> findTasksForBoard(Board board) {
-        return taskRepository.findAllByBoardId(board.getId());
+    public List<Task> findTasksForBoard(Long boardId) {
+        return taskRepository.findAllByBoardId(boardId);
     }
+
     @Override
-    public List<Task> findTasksForUser(User user) {
-        return taskRepository.findAllByUserId(user.getId());
+    public List<Task> findTasksForUser(Long userId) {
+        return taskRepository.findAllByUserId(userId);
     }
+
     @Override
     public List<Task> findTaskForCurrentUser() {
-        User currentUser = CurrentUser.getInstance().getUser();
-        if (currentUser != null) {
-            return taskRepository.findAllByUserId(currentUser.getId());
-        }
-        return new ArrayList<>();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User user = (User) authentication.getPrincipal();
+        return taskRepository.findAllByUserId(user.getId());
     }
 
     @Override

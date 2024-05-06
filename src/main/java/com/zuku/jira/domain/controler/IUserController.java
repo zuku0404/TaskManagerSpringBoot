@@ -1,24 +1,18 @@
 package com.zuku.jira.domain.controler;
 
 import com.zuku.jira.entity.User;
-import com.zuku.jira.helpers.ActionResult;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
 public interface IUserController {
-    public User getUserById(Long userId);
+    public User getUser(Long userId);
 
     public List<User> getUsers();
 
-    public ActionResult createUser(User user);
+    public ResponseEntity<Object> updateUser(String firstName, String lastName);
 
-    public ActionResult updateUser(String firstName, String lastName);
+    public ResponseEntity<Object> updatePassword(String newPassword);
 
-    public ActionResult updatePassword(String oldPassword, String newPassword);
-
-    public ActionResult removeAccount();
-
-    public ActionResult signIn(String login, String password);
-
-    public ActionResult signOut();
+    public ResponseEntity<Object> removeUser();
 }

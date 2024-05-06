@@ -1,61 +1,55 @@
 package com.zuku.jira.domain.controler.impl;
 
-import com.zuku.jira.JiraProjectSpringBootApplication;
 import com.zuku.jira.domain.controler.IBoardController;
 import com.zuku.jira.domain.service.IBoardService;
 import com.zuku.jira.entity.Board;
-import com.zuku.jira.helpers.ActionResult;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/boards")
+@RequestMapping("/api/v1/boards")
+@RequiredArgsConstructor
 public class BoardControllerImpl implements IBoardController {
     private final IBoardService boardService;
 
-    @Autowired
-    public BoardControllerImpl(IBoardService boardService) {
-        this.boardService = boardService;
+    @GetMapping(path = "/{boardId}")
+    @Override
+    public Board getBoardById(@PathVariable("boardId") Long boardId) {
+        return boardService.findBoardById(boardId);
     }
 
-    @GetMapping(path = "/id:{boardId}")
+    @GetMapping(path = "/name/{boardName}")
     @Override
-    public Board getBoardById(@PathVariable("boardId") Long boardId){
-        return boardService.findBoard(boardId);
-    }
-
-    @GetMapping(path = "/name:{boardName}")
-    @Override
-    public Board getBoardByName(@PathVariable("boardName") String name){
-        return boardService.findByName(name);
+    public Board getBoardByName(@PathVariable("boardName") String name) {
+        return boardService.findBoardByName(name);
     }
 
     @GetMapping
     @Override
-    public List<Board> getAllBoards(){
-         return boardService.findAllBoards();
-    }
-
-    @DeleteMapping(path = "{boardId}")
-    @Override
-    public ActionResult removeBoard(@PathVariable("boardId") Long boardId){
-        return boardService.deleteBoard(boardId);
+    public List<Board> getAllBoards() {
+        return boardService.findBoards();
     }
 
     @PostMapping
     @Override
-    public ActionResult registerNewBoard(@RequestBody Board board){
-        System.out.println(board);
+    public ResponseEntity<Object> registerNewBoard(@RequestBody Board board) {
         return boardService.createBoard(board);
     }
 
-    @PutMapping("{oldName}")
+    @PutMapping("/{boardId}")
     @Override
-    public ActionResult updateBoard(
-            @PathVariable("oldName") String oldName,
-            @RequestParam String newName) {
-        return boardService.editBoard(oldName, newName);
+    public ResponseEntity<Object> updateBoard(
+            @PathVariable("boardId") Long boardId,
+            @RequestParam String name) {
+        return boardService.editBoard(boardId, name);
+    }
+
+    @DeleteMapping(path = "/{boardId}")
+    @Override
+    public ResponseEntity<Object> removeBoard(@PathVariable("boardId") Long boardId) {
+        return boardService.deleteBoard(boardId);
     }
 }

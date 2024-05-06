@@ -1,18 +1,18 @@
 package com.zuku.jira.domain.controler;
 
-import com.zuku.jira.entity.Board;
+import com.zuku.jira.dto.TaskDto;
 import com.zuku.jira.entity.Task;
-import com.zuku.jira.entity.User;
-import com.zuku.jira.helpers.ActionResult;
+
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
 public interface ITaskController {
-    public ActionResult createNewTask(Task task);
+    public ResponseEntity<Object> createNewTask(TaskDto task);
 
-    public ActionResult updateTask(Long taskId, String title, String description, Long boardId, Long userId);
+    public ResponseEntity<Object> updateTask(Long taskId, String title, String description, Long boardId, Long userId);
 
-    public ActionResult removeTask(Long taskId);
+    public ResponseEntity<Object> removeTask(Long taskId);
 
     public Task getTaskByTitle(String title);
 
@@ -20,9 +20,9 @@ public interface ITaskController {
 
     public List<Task> getTasksForCurrentUser();
 
-    public List<Task> getTasksForBoard(Board board);
+    public List<Task> getTasksForBoard(Long boardId);
 
-    public List<Task> getTasksForUser(User user);
+    public List<Task> getTasksForUser(Long userId);
 
     public List<Task> getAllTasks();
 }

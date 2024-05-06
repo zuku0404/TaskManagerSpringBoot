@@ -1,4 +1,4 @@
-package com.zuku.jira.helpers;
+package com.zuku.jira.domain.enums;
 
 public enum ActionResultDescription {
     LOGIN_NOT_EXIST ("login not exist"),
@@ -8,12 +8,13 @@ public enum ActionResultDescription {
     INCORRECT_PASSWORD ("password incorrect"),
     FAIL_SAVE_CHANGES_DB("something went wrong with saving changes to the database"),
     SUCCESS(""),
+    OLD_PASSWORD_INCORRECT("current password is incorrect"),
     BOARD_NAME_EXIST ("board name already exists"),
     BOARD_NOT_EXIST ("board not exist"),
     TASK_NAME_EXIST ("task name already exists"),
     TASK_NOT_EXIST ("task not exist");
 
-    private String description;
+    private final String description;
 
     ActionResultDescription(String description) {
         this.description = description;

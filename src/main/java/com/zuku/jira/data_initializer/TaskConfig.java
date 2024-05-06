@@ -1,4 +1,4 @@
-package com.zuku.jira.domain.configuration;
+package com.zuku.jira.data_initializer;
 
 import com.zuku.jira.domain.repository.IBoardRepository;
 import com.zuku.jira.domain.repository.ITaskRepository;

@@ -1,78 +1,92 @@
 package com.zuku.jira.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.zuku.jira.domain.enums.Role;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
-public class User {
+public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private String lastName;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
     @OneToOne(cascade = CascadeType.REMOVE)
     private Account account;
 
-    @OneToMany(mappedBy = "user")
-    @JsonIgnoreProperties("user")
+    @OneToMany(mappedBy = "user", orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonIgnore
     private Set<Task> tasks;
 
-    public User() {
-    }
-
-    public User(String name, String lastName, Account account) {
+    public User(String name, String lastName, Role role, Account account) {
         this.name = name;
         this.lastName = lastName;
+        this.role = role;
         this.account = account;
     }
-
-//    public User(Long id, String name, String lastName, Account account, Set<Task> tasks) {
-//        this.id = id;
-//        this.name = name;
-//        this.lastName = lastName;
-//        this.account = account;
-//        this.tasks = tasks;
-//    }
-
-    public Long getId() {
-        return id;
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    @Override
+    public String getPassword() {
+        return account.getPassword();
     }
 
-    public String getName() {
-        return name;
+    @Override
+    public String getUsername() {
+        return getAccount().getLogin();
     }
 
-    public void setName(String name) {
-        this.name = name;
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
     }
 
-    public String getLastName() {
-        return lastName;
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
     }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
     }
 
-    public Account getAccount() {
-        return account;
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 
-    public void setAccount(Account account) {
-        this.account = account;
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", role=" + role +
+                ", account=" + account +
+                '}';
     }
-
-//    public Set<Task> getTasks() {
-//        return tasks;
-//    }
-//
-//    public void setTasks(Set<Task> tasks) {
-//        this.tasks = tasks;
-//    }
 }

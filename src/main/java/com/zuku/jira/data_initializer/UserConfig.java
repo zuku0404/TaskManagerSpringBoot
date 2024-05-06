@@ -1,8 +1,9 @@
-package com.zuku.jira.domain.configuration;
+package com.zuku.jira.data_initializer;
 
 import com.zuku.jira.domain.repository.IAccountRepository;
 import com.zuku.jira.domain.repository.IUserRepository;
 import com.zuku.jira.entity.User;
+import com.zuku.jira.domain.enums.Role;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,11 +18,11 @@ public class UserConfig {
     CommandLineRunner userCommandLineRunner(IUserRepository userRepository, IAccountRepository accountRepository) {
         return args -> {
             userRepository.saveAll(List.of(
-                    new User("John", "Doe", accountRepository.findById(1L).orElseThrow() ),
-                    new User("Jane", "Smith", accountRepository.findById(2L).orElseThrow()),
-                    new User("Michael", "Johnson", accountRepository.findById(3L).orElseThrow()),
-                    new User("Emily", "Davis", accountRepository.findById(4L).orElseThrow()),
-                    new User("William", "Brown", accountRepository.findById(5L).orElseThrow())));
+                    new User("John", "Doe", Role.USER, accountRepository.findById(1L).orElseThrow() ),
+                    new User("Jane", "Smith", Role.USER, accountRepository.findById(2L).orElseThrow()),
+                    new User("Michael", "Johnson", Role.USER, accountRepository.findById(3L).orElseThrow()),
+                    new User("Emily", "Davis", Role.USER, accountRepository.findById(4L).orElseThrow()),
+                    new User("William", "Brown", Role.USER, accountRepository.findById(5L).orElseThrow())));
         };
     }
 }
